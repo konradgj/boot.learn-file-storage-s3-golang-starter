@@ -104,10 +104,23 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 
 	objectKey = fmt.Sprintf("%s/%s", aspectRatio, objectKey)
 
+	processedVideoPath, err := processVideoForFastStart(dst.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't process video for faststart", err)
+		return
+	}
+	defer os.Remove(processedVideoPath)
+
+	processedVideo, err := os.Open(processedVideoPath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't open processed video", err)
+		return
+	}
+
 	putObjectInput := &s3.PutObjectInput{
 		Bucket:      &cfg.s3Bucket,
 		Key:         &objectKey,
-		Body:        dst,
+		Body:        processedVideo,
 		ContentType: &mediaType,
 	}
 
