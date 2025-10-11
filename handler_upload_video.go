@@ -87,6 +87,22 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	dst.Seek(0, io.SeekStart)
 
 	objectKey := getAssetPath(mediaType)
+	aspectRatio, err := getVideoAspectRatio(dst.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't get video aspect ratio", err)
+		return
+	}
+
+	switch aspectRatio {
+	case "16:9":
+		aspectRatio = "landscape"
+	case "9:16":
+		aspectRatio = "portrait"
+	default:
+		aspectRatio = "other"
+	}
+
+	objectKey = fmt.Sprintf("%s/%s", aspectRatio, objectKey)
 
 	putObjectInput := &s3.PutObjectInput{
 		Bucket:      &cfg.s3Bucket,
@@ -110,6 +126,6 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	fmt.Println("successfuly uploaded video", videoID)
+	fmt.Println("uploaded video", videoID, "by user", userID, "to", objectKey)
 	respondWithJSON(w, http.StatusOK, videoMetadata)
 }
