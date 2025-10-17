@@ -4,36 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"os/exec"
-	"strings"
-	"time"
-
-	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/database"
 )
-
-func (cfg *apiConfig) dbVideoToSignedVideo(video database.Video) (database.Video, error) {
-	if video.VideoURL == nil {
-		return video, nil
-	}
-
-	parts := strings.SplitN(*video.VideoURL, ",", 2)
-	if len(parts) != 2 {
-		log.Printf("bad video URL stored for id=%v: %q\n", video.ID, *video.VideoURL)
-		return video, fmt.Errorf("could not split url properly: %v", parts)
-	}
-	bucket := strings.TrimSpace(parts[0])
-	key := strings.TrimSpace(parts[1])
-
-	signedUrl, err := generatePresignedURL(cfg.s3Client, bucket, key, 15*time.Minute)
-	if err != nil {
-		return video, fmt.Errorf("could not generate signed url: %w", err)
-	}
-	video.VideoURL = &signedUrl
-	return video, nil
-}
 
 func processVideoForFastStart(filePath string) (string, error) {
 	outPath := filePath + ".processing"
